@@ -1,0 +1,19 @@
+Package: inf460
+Type: Package
+Title: Misc tools for daily analysis
+Version: 1.0
+Date: 2013-03-28
+Author: Stephan Gade
+Maintainer: Stephan Gade <stephan.gade@gmail.com>
+Depends:
+    limma,
+    ggplot2,
+    gridExtra,
+    survival,
+    plyr,
+    texreg
+Description: Misc stuff
+License: GPL-3
+Collate:
+    'graphics.R'
+    'tools.R'
