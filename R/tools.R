@@ -57,12 +57,14 @@ ExtractOR <- function(object, ...) {
     or <- exp(coef(object))
 
     ## get CI intervals
-    ci <- exp(confint(object, ...))
+    ci <- signif(exp(confint(object, ...)),3)
    
     ## assemble data frame
     ret <- cbind(OR=or,
                  ci,
-                 coefs[,3:4,drop=F])
+                 signif(coefs[,3:4,drop=F], 3))
+    colnames(ret)[c(1,5)] <- c("OR", "P")
+    rownames(ret) <- rownames(coefs)
 
     return(ret)
 }
@@ -89,14 +91,14 @@ ExtractHR <- function(object, ...) {
     hr <- signif(exp(coef(object)),3)
 
     ## get CI intervals
-    #ci <- exp(confint(object, ...))
-    ci <- paste("[", apply(signif(exp(confint(object)), 3),1, paste, collapse=", "), "]", sep="")
+    ci <- signif(exp(confint(object, ...)),3)
+    #ci <- paste("[", apply(signif(exp(confint(object)), 3),1, paste, collapse=", "), "]", sep="")
    
     ## assemble data frame
     ret <- cbind(hr,
                  ci,
                  signif(coefs[,4:5,drop=F], 3))
-    colnames(ret)[1:2] <- c("HR", "95% CI")
+    colnames(ret)[c(1,5)] <- c("HR", "P")
     rownames(ret) <- rownames(coefs)
 
     return(ret)
