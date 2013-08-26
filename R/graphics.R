@@ -8,6 +8,50 @@
 # various plotting functions
 #
 
+
+#'
+#' Align ggplo2 plots vertically
+#'
+#' @param ... ggplo2 plots
+#' @param heights the heights of the single plots. If NULL an equal height of 1 is asusmed for all plots. Default to NULL
+#' 
+#' @return arranged plots
+#'
+#' @import ggplot2
+#' @import gtable
+#' @export
+AlignPlots <- function(..., heights=NULL) {
+
+    ## get plots
+    plots <- list(...)
+
+    ## get tables from all plots
+    gtables <- lapply(plots, function(xx)  ggplot_gtable(ggplot_build(xx)))
+
+    ## get maximal width
+    width.max <- do.call(unit.pmax, lapply(gtables, function(xx) xx$widths[2:3]))
+
+    ## set maximal with for all objects
+    gtables <- lapply(gtables, 
+                      function(xx) {
+                          xx$widths[2:3] <- width.max
+                          xx
+                      })
+
+    ## set height to unuiform height of 1 if not given
+    ## and create unit classes
+    if (is.null(heights)) {
+        heights <- rep(1, length(plots))
+    }
+    heights <- unit(heights, rep("null", length(heights)))
+
+    ret <- do.call(arrangeGrob, c(gtables, list(nrow=length(plots), ncol=1, clip=T, heights=heights)))
+
+    return(ret)
+}
+
+
+
 #'
 #' Kaplan Meier Plot from Matt Cooper (http://mcfromnz.wordpress.com/2012/05/05/kaplan-meier-survival-plot-with-at-risk-table-by-sub-groups/)
 #'
@@ -28,6 +72,7 @@
 #' @param timeby numeric: control the granularity along the time-axis
 #' @param main plot title
 #' @param pval logical: add the pvalue to the plot?
+#' @param pval.size size of the pvalue in the plot. Default to 3
 #' @param probs numeric: vector with survail probabilities that will be marked by dotted lines, dfault to NULL
 #' @param subs default to NULL
 #'
@@ -51,6 +96,7 @@ ggkm <- function(sfit,
                  timeby = 100,
                  main = "Kaplan-Meier Plot",
                  pval = TRUE,
+                 pval.size=4,
                  probs = NULL,
                  subs = NULL,
                  ...) {
@@ -151,7 +197,7 @@ ggkm <- function(sfit,
         }
     }
     p <- p + 
-    theme(legend.position = c(ifelse(m < 10, .28, .35),ifelse(d < 4, .25, .35))) +    # MOVE LEGEND HERE [first is x dim, second is y dim]
+    theme(legend.position = c(ifelse(m < 10, ylims.28, .35),ifelse(d < 4, max(ylims[1]+.25, 0.8), max(ylims[1]+.35, 0.8)))) +    # MOVE LEGEND HERE [first is x dim, second is y dim]
     theme(legend.key = element_rect(colour = NA))+
     theme(axis.title.x = element_text(vjust = 0.5)) +
     theme(axis.title.y = element_text(vjust=1, angle=90)) + 
@@ -173,7 +219,7 @@ ggkm <- function(sfit,
         }
         pval <- pchisq(sdiff$chisq,length(sdiff$n) - 1,lower.tail = FALSE)
         pvaltxt <- ifelse(pval < 0.0001,"p < 0.0001",paste("p =", signif(pval, 2)))
-        p <- p + annotate("text",x = 0.8 * max(sfit$time),y = 0.1,label = pvaltxt, size=5)
+        p <- p + annotate("text",x = 0.8 * max(sfit$time),y = (ylims[1] + 0.1),label = pvaltxt, size=pval.size)
     }
 
     ###################################################
@@ -207,26 +253,16 @@ ggkm <- function(sfit,
         # Plotting the graphs #
         #######################
 
-        ## create gtables from the objects
-        gA <- ggplot_gtable(ggplot_build(p))
-        gB <- ggplot_gtable(ggplot_build(data.table))
-
-        ## get maximal width
-        width.max = unit.pmax(gA$widths[2:3], gB$widths[2:3])
-
-        ## set maximal with for all objects
-        gA$widths[2:3] <- width.max
-        gB$widths[2:3] <- width.max
-
-        ## arrange objects
-        a <- arrangeGrob(gA, gB, nrow=2, ncol=1, clip=T, heights = unit(c(2,.50),c("null", "null")))
-
+        a <- AlignPlots(p, data.table, heights=c(2, .5))
+        
         if (plot) {
             print(a)
         }
 
         if(returns) {
-            return(a)
+            ret <- list(km=a, main=p, table=data.table)
+            attr(ret, "class") <- "ggkm"
+            return(ret)
         }
     } else {
 
@@ -234,6 +270,24 @@ ggkm <- function(sfit,
         if(returns) return(p)
     }
 }
+
+#'
+#' Print function for ggkm plots
+#'
+#' A helper function for seamless call of print to results of a ggkm function
+#'
+#' @param x object of class 'ggkm'
+#'
+#' @import ggplot2
+#' @export
+#'
+print.ggkm <- function(x) {
+
+    print(x$km)
+}
+
+
+
 
 #'
 #' @title SplitGraphs
