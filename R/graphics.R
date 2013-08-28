@@ -197,7 +197,7 @@ ggkm <- function(sfit,
         }
     }
     p <- p + 
-    theme(legend.position = c(ifelse(m < 10, ylims.28, .35),ifelse(d < 4, max(ylims[1]+.25, 0.8), max(ylims[1]+.35, 0.8)))) +    # MOVE LEGEND HERE [first is x dim, second is y dim]
+    theme(legend.position = c(ifelse(m < 10, .28, .35),ifelse(d < 4, min(ylims[1]+.25, 0.8), min(ylims[1]+.35, 0.8)))) +    # MOVE LEGEND HERE [first is x dim, second is y dim]
     theme(legend.key = element_rect(colour = NA))+
     theme(axis.title.x = element_text(vjust = 0.5)) +
     theme(axis.title.y = element_text(vjust=1, angle=90)) + 
