@@ -13,6 +13,7 @@
 #' Align ggplo2 plots vertically
 #'
 #' @param ... ggplo2 plots
+#' @param plots list with ggplot2 plots, default to NULL
 #' @param heights the heights of the single plots. If NULL an equal height of 1 is asusmed for all plots. Default to NULL
 #' 
 #' @return arranged plots
@@ -20,10 +21,12 @@
 #' @import ggplot2
 #' @import gtable
 #' @export
-AlignPlots <- function(..., heights=NULL) {
+AlignPlots <- function(..., plots=NULL,  heights=NULL) {
 
     ## get plots
-    plots <- list(...)
+    if (is.null(plots)) {
+        plots <- list(...)
+    }
 
     ## get tables from all plots
     gtables <- lapply(plots, function(xx)  ggplot_gtable(ggplot_build(xx)))

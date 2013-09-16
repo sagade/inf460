@@ -42,28 +42,34 @@ ReplaceCoefNames <- function(object) {
 #' 'glm' and related objects
 #'
 #' @param object a 'glm' object
+#' @param level the confidence level (has to be between 0 and 1). Default to 0.95
 #' @param ... further arguments to \code{confint}
 #'
-#' @return matrix with odds-ratios (exponential of coefficients), confidence intervals, z ratios  and p values
+#' @return matrix with odds-ratios (exponential of coefficients), confidence intervals, and p values
 #'
 #' @export
 #'
-ExtractOR <- function(object, ...) {
+ExtractOR <- function(object, level=0.95, ...) {
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
 
     ## get odds ratios, simply the exp of coefs
-    or <- exp(coef(object))
+    or <- signif(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- signif(exp(confint(object, ...)),3)
-   
+    ci <- signif(exp(confint(object, level=level, ...)),3)
+    
     ## assemble data frame
-    ret <- cbind(OR=or,
+    ret <- cbind(or,
                  ci,
-                 signif(coefs[,3:4,drop=F], 3))
-    colnames(ret)[c(1,5)] <- c("OR", "P")
+                 signif(coefs[,4,drop=F], 2))
+    
+    ## get level as percentage value
+    lev <- paste(format(level*100), "%", sep="")
+
+    ## set col and rownames
+    colnames(ret) <- c("OR", paste(lev, "lower"), paste(lev, "upper"), "P")
     rownames(ret) <- rownames(coefs)
 
     return(ret)
@@ -72,17 +78,17 @@ ExtractOR <- function(object, ...) {
 
 
 #'
-#' Function to extract hazard-ratios, confidence intervals, and p values as given by the 'summary' function for 
 #' 'coxph' and related objects
 #'
 #' @param object a 'coxph' object
+#' @param level the confidence level (has to be between 0 and 1). Default to 0.95
 #' @param ... further arguments to \code{confint}
 #'
-#' @return matrix with hazard-ratios (exponential of coefficients), confidence intervals, z ratios  and p values
+#' @return matrix with hazard-ratios (exponential of coefficients), confidence intervals, and p values
 #'
 #' @export
 #'
-ExtractHR <- function(object, ...) {
+ExtractHR <- function(object, level=0.95, ...) {
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
@@ -91,14 +97,19 @@ ExtractHR <- function(object, ...) {
     hr <- signif(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- signif(exp(confint(object, ...)),3)
+    ci <- signif(exp(confint(object, level=level, ...)),3)
     #ci <- paste("[", apply(signif(exp(confint(object)), 3),1, paste, collapse=", "), "]", sep="")
    
     ## assemble data frame
     ret <- cbind(hr,
                  ci,
-                 signif(coefs[,4:5,drop=F], 3))
-    colnames(ret)[c(1,5)] <- c("HR", "P")
+                 signif(coefs[,5,drop=F], 2))
+
+    ## get level as percentage value
+    lev <- paste(format(level*100), "%", sep="")
+
+    ## set col and rownames
+    colnames(ret) <- c("HR", paste(lev, "lower"), paste(lev, "upper"), "P")
     rownames(ret) <- rownames(coefs)
 
     return(ret)
@@ -456,3 +467,157 @@ CoxP <- function(x) {
 }
 
 
+#'
+#' Helper function to make Hmisc's latex easier
+#'
+#' @param data frame or matrix to be printed
+#' @param file the file to be written, default to "" which means no file but stdout
+#' @param booktabs boolean, whether to use booktabs package or not, default to TRUE
+#' @param ctable boolean, whether to use ctable package or not, default to FALSE
+#' @param rowlabel label for first column with rownames, default to ""
+#' @param n.cgroup see Hmisc::latex, default to NULL. If NULL but cgroup is not will be set to ncol(x)
+#' @param cgroup see Hmisc::latex
+#' @param ... further arguments to Hmisc::latex
+#'
+#' @import Hmisc
+#' @export
+#'
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.ngroup=NULL, ngroup=NULL, ...) {
+
+    ## sanitize col and row names
+    ## not done automatically by Hmisc::latex
+    colnames(x) <- sani(colnames(x))
+    rownames(x) <- sani(rownames(x))
+
+    ## set appropriate n.cgroup if not given but cgroup
+    if (is.null(n.cgroup) && !is.null(cgroup)) {
+        if (ncol(x) %% length(cgroup) != 0) {
+            stop('ncol(x) is not a multiply of length(cgroup). n.cgroup must be givern!')
+        }
+        n.cgroup <- rep((ncol(x) %/% length(cgroup)), length(cgroup))
+    }
+
+    ## set appropriate n.ngroup if not given but ngroup
+    if (is.null(n.ngroup) && !is.null(ngroup)) {
+        if (nrow(x) %% length(ngroup) != 0) {
+            stop('nrow(x) is not a multiply of length(ngroup). n.ngroup must be givern!')
+        }
+        n.ngroup <- rep((nrow(x) %/% length(ngroup)), length(ngroup))
+    }
+
+    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, ...)
+}
+
+
+#'
+#' CIndexTest
+#'
+#' Tests for a variable the Improvement in C-Index of a Cox model
+#'
+#' @param formula model formula with a Surv object on the left side
+#' @param var the name of variable to test with C-Index. Will be added to the formula if not included
+#' @param data the data frame for model fitting. Must contain all variables in the formula
+#' @param N number of permutations for the test, default to 10,000
+#' @param cores number of cores to use for permutation
+#'
+#' @return list with the original C-Index, the permutation C-Indices and the p-value (one sided, alternative="higher")
+#'
+CIndexTest <- function(formula, var, data, N=10000, seed=123, cores=2, ...) {
+
+
+    require(survival)
+    require(parallel)
+
+    ## crate data frame with needed variables
+    mf <- match.call()
+    m <- match(c("formula", "data", "subset"), names(mf), 0L)
+    mf <- mf[c(1L, m)]
+    mf$drop.unused.levels <- TRUE
+    mf[[1L]] <- as.name("model.frame")
+
+    ## check if var is already in the formula
+    if (!var %in% attr(terms(formula), "term.labels")) {
+        cat("CIndexTest: Adding", var, "to model formula ... ")
+        formula <- update(formula, as.formula(paste("~.+", var, sep="")))
+        mf[[2L]] <- formula
+        cat("!\n")
+    }
+
+    ## eval mf, check if all variables are there
+    mf <- eval(mf, parent.frame())
+
+    ## fit original Cox model and get original C-Index
+    cox.ori <- coxph(formula=formula, data=data, ...)
+    c.ori   <- summary(cox.ori)$concordance[1]
+
+    ## get permutation
+    set.seed(seed)
+    perms <- lapply(1:N, function(xx) sample(x=nrow(data), size=nrow(data), replace=F))
+
+    
+    ## parallel computation of c-indices
+    c.perms <- mclapply(perms, 
+                        function(perm) {
+
+                            ## get data with permutated variable
+                            data.perm <- data
+                            data.perm[[var]] <- data[perm,var]
+
+                            ## get cox model and concordance
+                            cox.perm <- coxph(formula=formula, data=data.perm, ...)
+
+                            ## return concordance index
+                            return(summary(cox.perm)$concordance[1])
+
+                        }, mc.cores=cores)
+    c.perms <- unlist(c.perms)
+
+    ## get cdf and p value one sided
+    cdf <- ecdf(c.perms)
+    p.value <- 1-cdf(c.ori)
+
+    ## get return object
+    ret <- list(c.ori=c.ori, c.perms=c.perms, p.value=p.value, model=formula, var=var, N=N)
+    class(ret) <- "citest"
+    return(ret)
+}
+
+#'
+#' Plot function for 'citest' class
+#'
+plot.citest <- function(x)  {
+
+    ## load libraries
+    require(ggplot2)
+
+    data.plot <- data.frame(c.perms=x$c.perms)
+    pl <- ggplot(data.plot, aes(x=c.perms)) + geom_histogram() + geom_vline(xintercep=x$c.ori, colour="red") + xlab("C-Index (permutations)") 
+    pl <- pl +  annotate("text", label=paste("C-Index: ", signif(x$c.ori, 3)), x=x$c.ori, y=1000)
+
+    print(pl)
+
+    invisible(pl)
+
+}
+
+
+#'
+#' Print function for 'citest' class
+#'
+#' @param x object of class 'citest'
+#'
+#' @return x (invisible)
+#'
+print.citest <- function(x) {
+
+    ## print out information
+    cat("\n       Concordance index test for", x$var, "in Cox model\n        ") 
+    print(x$model) 
+    cat("\n\n")
+    cat("  C-Index for full model:", x$c.ori,"\n")
+    cat("  p-value:", x$p.value,"\n")
+    cat("  number of permutations:", x$N, "\n\n")
+
+    ## return x
+    invisible(x)
+}
