@@ -475,14 +475,16 @@ CoxP <- function(x) {
 #' @param booktabs boolean, whether to use booktabs package or not, default to TRUE
 #' @param ctable boolean, whether to use ctable package or not, default to FALSE
 #' @param rowlabel label for first column with rownames, default to ""
-#' @param n.cgroup see Hmisc::latex, default to NULL. If NULL but cgroup is not will be set to ncol(x)
+#' @param n.cgroup see Hmisc::latex, default to NULL. If NULL but cgroup is not will be set accordingly
 #' @param cgroup see Hmisc::latex
+#' @param n.rgroup see Hmisc::latex, default to NULL. If NULL but rgroup is not will be set accordingly
+#' @param rgroup see Hmisc::latex
 #' @param ... further arguments to Hmisc::latex
 #'
 #' @import Hmisc
 #' @export
 #'
-PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.ngroup=NULL, ngroup=NULL, ...) {
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, ...) {
 
     ## sanitize col and row names
     ## not done automatically by Hmisc::latex
@@ -497,15 +499,15 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
         n.cgroup <- rep((ncol(x) %/% length(cgroup)), length(cgroup))
     }
 
-    ## set appropriate n.ngroup if not given but ngroup
-    if (is.null(n.ngroup) && !is.null(ngroup)) {
-        if (nrow(x) %% length(ngroup) != 0) {
-            stop('nrow(x) is not a multiply of length(ngroup). n.ngroup must be givern!')
+    ## set appropriate n.rgroup if not given but rgroup
+    if (is.null(n.rgroup) && !is.null(rgroup)) {
+        if (nrow(x) %% length(rgroup) != 0) {
+            stop('nrow(x) is not a multiply of length(rgroup). n.rgroup must be givern!')
         }
-        n.ngroup <- rep((nrow(x) %/% length(ngroup)), length(ngroup))
+        n.rgroup <- rep((nrow(x) %/% length(rgroup)), length(rgroup))
     }
 
-    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, ...)
+    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, ...)
 }
 
 
