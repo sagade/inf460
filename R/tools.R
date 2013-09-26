@@ -484,7 +484,7 @@ CoxP <- function(x) {
 #' @import Hmisc
 #' @export
 #'
-PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, ...) {
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
 
     ## sanitize col and row names
     ## not done automatically by Hmisc::latex
@@ -494,7 +494,7 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
     ## set appropriate n.cgroup if not given but cgroup
     if (is.null(n.cgroup) && !is.null(cgroup)) {
         if (ncol(x) %% length(cgroup) != 0) {
-            stop('ncol(x) is not a multiply of length(cgroup). n.cgroup must be givern!')
+            stop('ncol(x) is not a multiply of length(cgroup). n.cgroup must be given!')
         }
         n.cgroup <- rep((ncol(x) %/% length(cgroup)), length(cgroup))
     }
@@ -502,12 +502,41 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
     ## set appropriate n.rgroup if not given but rgroup
     if (is.null(n.rgroup) && !is.null(rgroup)) {
         if (nrow(x) %% length(rgroup) != 0) {
-            stop('nrow(x) is not a multiply of length(rgroup). n.rgroup must be givern!')
+            stop('nrow(x) is not a multiply of length(rgroup). n.rgroup must be given!')
         }
         n.rgroup <- rep((nrow(x) %/% length(rgroup)), length(rgroup))
     }
 
-    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, ...)
+
+    ## if a p value column is given, print p values below the p.level bold
+    if (!missing(p.columns)) {
+
+        ## check type of columns
+        m <- apply(x[,p.columns,drop=F], 2, is.numeric)
+        if (!all(m)) {
+            warning(sum(!m), "/", length(p.columns), " are not numeric and are ignored for p value highlighting.")
+        }
+
+        ## if any of the columns is numeric procesd
+        if (any(m)) {
+            p.columns <- p.columns[m]
+
+            ## create matrix with cell commands, if cellTexCmds is not given already
+            if (is.null(cellTexCmds) || (dim(cellTexCmds) != dim(x))) {
+                cellTexCmds <- matrix(rep("", NROW(x) * NCOL(x)), nrow=NROW(x))
+            }
+
+            ## create index matrix
+            ttt <- apply(x[,p.columns, drop=F], 2, "<", p.level)
+            index <- cbind(unlist(apply(ttt, 2, which)),
+                           rep(p.columns, colSums(ttt)))
+
+            ## set appropriate cells to p.cmd (default to bfseries) to print p value below the level as bold
+            cellTexCmds[index] <- p.cmd
+        }
+    }
+
+    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, cellTexCmds=cellTexCmds, ...)
 }
 
 
