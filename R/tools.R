@@ -484,7 +484,7 @@ CoxP <- function(x) {
 #' @import Hmisc
 #' @export
 #'
-PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns=NULL, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
 
     ## sanitize col and row names
     ## not done automatically by Hmisc::latex
@@ -509,7 +509,7 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
 
 
     ## if a p value column is given, print p values below the p.level bold
-    if (!missing(p.columns)) {
+    if (!is.null(p.columns)) {
 
         ## check type of columns
         m <- apply(x[,p.columns,drop=F], 2, is.numeric)
@@ -528,7 +528,7 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
 
             ## create index matrix
             ttt <- apply(x[,p.columns, drop=F], 2, "<", p.level)
-            index <- cbind(unlist(apply(ttt, 2, which)),
+            index <- cbind(as.integer(unlist(apply(ttt, 2, which))),
                            rep(p.columns, colSums(ttt)))
 
             ## set appropriate cells to p.cmd (default to bfseries) to print p value below the level as bold
