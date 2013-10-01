@@ -474,17 +474,23 @@ CoxP <- function(x) {
 #' @param file the file to be written, default to "" which means no file but stdout
 #' @param booktabs boolean, whether to use booktabs package or not, default to TRUE
 #' @param ctable boolean, whether to use ctable package or not, default to FALSE
+#' @param caption see Hmisc::latex, default to NULL.
+#' @param caption.loc see Hmisc::latex, default to "top".
 #' @param rowlabel label for first column with rownames, default to ""
 #' @param n.cgroup see Hmisc::latex, default to NULL. If NULL but cgroup is not will be set accordingly
 #' @param cgroup see Hmisc::latex
 #' @param n.rgroup see Hmisc::latex, default to NULL. If NULL but rgroup is not will be set accordingly
 #' @param rgroup see Hmisc::latex
+#' @param p.columns column numbers of columns with p values. If NULL p values are not highlighted. Default to NULL.
+#' @param p.level p values below that significance level are highligted for better reading (only if p.columns is given). Default to 0.05
+#' @param p.cmd character string. The latex command used to highlight p values. Default to "bfseries" for boldface.
+#' @param cellTexCmds see Hmisc::latex. Default to NULL.
 #' @param ... further arguments to Hmisc::latex
 #'
 #' @import Hmisc
 #' @export
 #'
-PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns=NULL, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, caption=NULL, caption.loc="top", rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns=NULL, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
 
     ## sanitize col and row names
     ## not done automatically by Hmisc::latex
@@ -536,7 +542,7 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, rowlabel="", n.cgroup=N
         }
     }
 
-    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, cellTexCmds=cellTexCmds, ...)
+    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, caption=caption, caption.loc=caption.loc, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, cellTexCmds=cellTexCmds, ...)
 }
 
 
