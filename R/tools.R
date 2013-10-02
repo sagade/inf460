@@ -535,7 +535,7 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, caption=NULL, caption.l
             ## create index matrix
             ttt <- apply(x[,p.columns, drop=F], 2, "<", p.level)
             index <- cbind(as.integer(unlist(apply(ttt, 2, which))),
-                           rep(p.columns, colSums(ttt)))
+                           rep(p.columns, colSums(ttt, na.rm=T)))
 
             ## set appropriate cells to p.cmd (default to bfseries) to print p value below the level as bold
             cellTexCmds[index] <- p.cmd
