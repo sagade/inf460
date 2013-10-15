@@ -485,17 +485,18 @@ CoxP <- function(x) {
 #' @param p.level p values below that significance level are highligted for better reading (only if p.columns is given). Default to 0.05
 #' @param p.cmd character string. The latex command used to highlight p values. Default to "bfseries" for boldface.
 #' @param cellTexCmds see Hmisc::latex. Default to NULL.
+#' @param sanitize function to sanitize row- and colnames. Default is the identical function where nothing will be replaced.
 #' @param ... further arguments to Hmisc::latex
 #'
 #' @import Hmisc
 #' @export
 #'
-PrintLatex <- function(x, file="", booktabs=T, ctable=F, caption=NULL, caption.loc="top", rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns=NULL, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, ...) {
+PrintLatex <- function(x, file="", booktabs=T, ctable=F, caption=NULL, caption.loc="top", rowlabel="", n.cgroup=NULL, cgroup=NULL, n.rgroup=NULL, rgroup=NULL, p.columns=NULL, p.level=0.05, p.cmd="bfseries", cellTexCmds=NULL, sanitize=function(xx) {xx}, ...) {
 
     ## sanitize col and row names
     ## not done automatically by Hmisc::latex
-    colnames(x) <- sani(colnames(x))
-    rownames(x) <- sani(rownames(x))
+    colnames(x) <- sanitize(colnames(x))
+    rownames(x) <- sanitize(rownames(x))
 
     ## set appropriate n.cgroup if not given but cgroup
     if (is.null(n.cgroup) && !is.null(cgroup)) {
