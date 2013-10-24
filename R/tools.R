@@ -43,6 +43,7 @@ ReplaceCoefNames <- function(object) {
 #'
 #' @param object a 'glm' object
 #' @param level the confidence level (has to be between 0 and 1). Default to 0.95
+#' @param p.level a number between 0 and 1 that will be used as lower bound to display p-values. P-values below this level are just printed as "<p.level". If it is NULL, p-value are rounded to three decimals. Default to NULL.
 #' @param ... further arguments to \code{confint}
 #'
 #' @return matrix with odds-ratios (exponential of coefficients), confidence intervals, and p values
@@ -55,15 +56,15 @@ ExtractOR <- function(object, level=0.95, ...) {
     coefs <- summary(object)$coefficients
 
     ## get odds ratios, simply the exp of coefs
-    or <- signif(exp(coef(object)),3)
+    or <- round(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- signif(exp(confint(object, level=level, ...)),3)
+    ci <- round(exp(confint(object, level=level, ...)),3)
     
     ## assemble data frame
     ret <- cbind(or,
                  ci,
-                 signif(coefs[,4,drop=F], 2))
+                 round(coefs[,4,drop=F], 3))
     
     ## get level as percentage value
     lev <- paste(format(level*100), "%", sep="")
@@ -71,6 +72,30 @@ ExtractOR <- function(object, level=0.95, ...) {
     ## set col and rownames
     colnames(ret) <- c("OR", paste(lev, "lower"), paste(lev, "upper"), "P")
     rownames(ret) <- rownames(coefs)
+
+    ## process p value: round or replace
+
+    ## check p.level
+    if (!is.null(p.level) && (p.level > 1 || p.level <= 0)) {
+        warning("p.level has to between 0 and 1, ignoring it!")
+        p.level <- NULL
+    }
+
+    if (!is.null(p.level)) {
+    
+        ## get number of digits to be rounded
+        ## get it from p.level
+        ttt <- strsplit(sub('0+$', '', format(p.level, trim=T)), ".", fixed=TRUE)
+        ttt <- unlist(ttt)[2]
+        digits <- nchar(ttt)
+
+        ## round and replace p
+        ret$P <- ifelse(ret$P < p.level, paste("<", p.level, sep=""), format(round(ret$P, digits), trim=T))
+
+    } else {
+        ret$P <- round(ret$P, 3)
+    }
+
 
     return(ret)
 }
@@ -82,28 +107,29 @@ ExtractOR <- function(object, level=0.95, ...) {
 #'
 #' @param object a 'coxph' object
 #' @param level the confidence level (has to be between 0 and 1). Default to 0.95
+#' @param p.level a number between 0 and 1 that will be used as lower bound to display p-values. P-values below this level are just printed as "<p.level". If it is NULL, p-value are rounded to three decimals. Default to NULL.
 #' @param ... further arguments to \code{confint}
 #'
 #' @return matrix with hazard-ratios (exponential of coefficients), confidence intervals, and p values
 #'
 #' @export
 #'
-ExtractHR <- function(object, level=0.95, ...) {
+ExtractHR <- function(object, level=0.95, p.level=NULL,...) {
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
 
     ## get odds ratios, simply the exp of coefs
-    hr <- signif(exp(coef(object)),3)
+    hr <- round(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- signif(exp(confint(object, level=level, ...)),3)
-    #ci <- paste("[", apply(signif(exp(confint(object)), 3),1, paste, collapse=", "), "]", sep="")
+    ci <- round(exp(confint(object, level=level, ...)),3)
+    #ci <- paste("[", apply(round(exp(confint(object)), 3),1, paste, collapse=", "), "]", sep="")
    
     ## assemble data frame
     ret <- cbind(hr,
                  ci,
-                 signif(coefs[,5,drop=F], 2))
+                 coefs[,5,drop=F])
 
     ## get level as percentage value
     lev <- paste(format(level*100), "%", sep="")
@@ -111,6 +137,29 @@ ExtractHR <- function(object, level=0.95, ...) {
     ## set col and rownames
     colnames(ret) <- c("HR", paste(lev, "lower"), paste(lev, "upper"), "P")
     rownames(ret) <- rownames(coefs)
+
+    ## process p value: round or replace
+
+    ## check p.level
+    if (!is.null(p.level) && (p.level > 1 || p.level <= 0)) {
+        warning("p.level has to between 0 and 1, ignoring it!")
+        p.level <- NULL
+    }
+
+    if (!is.null(p.level)) {
+    
+        ## get number of digits to be rounded
+        ## get it from p.level
+        ttt <- strsplit(sub('0+$', '', format(p.level, trim=T)), ".", fixed=TRUE)
+        ttt <- unlist(ttt)[2]
+        digits <- nchar(ttt)
+
+        ## round and replace p
+        ret$P <- ifelse(ret$P < p.level, paste("<", p.level, sep=""), format(round(ret$P, digits), trim=T))
+
+    } else {
+        ret$P <- round(ret$P, 3)
+    }
 
     return(ret)
 }
