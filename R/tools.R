@@ -89,11 +89,14 @@ ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
         ttt <- unlist(ttt)[2]
         digits <- nchar(ttt)
 
+        ## create data frame to make it possible to create character vector for P
+        ret <- as.data.frame(ret)
+
         ## round and replace p
         ret$P <- ifelse(ret$P < p.level, paste("<", p.level, sep=""), format(round(ret$P, digits), trim=T))
 
     } else {
-        ret$P <- round(ret$P, 3)
+        ret[,"P"] <- round(ret[,"P"], 3)
     }
 
 
@@ -154,11 +157,14 @@ ExtractHR <- function(object, level=0.95, p.level=NULL,...) {
         ttt <- unlist(ttt)[2]
         digits <- nchar(ttt)
 
+        ## create data frame to make it possible to create character vector for P
+        ret <- as.data.frame(ret)
+
         ## round and replace p
         ret$P <- ifelse(ret$P < p.level, paste("<", p.level, sep=""), format(round(ret$P, digits), trim=T))
 
     } else {
-        ret$P <- round(ret$P, 3)
+        ret[,"P"] <- round(ret[,"P"], 3)
     }
 
     return(ret)
