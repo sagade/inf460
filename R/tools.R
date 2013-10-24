@@ -50,7 +50,7 @@ ReplaceCoefNames <- function(object) {
 #'
 #' @export
 #'
-ExtractOR <- function(object, level=0.95, ...) {
+ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
