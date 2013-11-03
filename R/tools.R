@@ -59,7 +59,11 @@ ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
     or <- round(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- round(exp(confint(object, level=level, ...)),3)
+    ## for each indivdual parameter
+    ci <- try(round(exp(confint(object, level=level, ...)),3))
+    if (inherits(ci, "try-error")) {
+        ci <- matrix(NA, nrow=length(or), ncol=2)
+    }
     
     ## assemble data frame
     ret <- cbind(or,
