@@ -37,6 +37,11 @@ ReplaceCoefNames <- function(object) {
 
 }
 
+
+
+
+
+
 #'
 #' Function to extract odds-ratios, confidence intervals, and p values as given by the 'summary' function for 
 #' 'glm' and related objects
@@ -44,13 +49,17 @@ ReplaceCoefNames <- function(object) {
 #' @param object a 'glm' object
 #' @param level the confidence level (has to be between 0 and 1). Default to 0.95
 #' @param p.level a number between 0 and 1 that will be used as lower bound to display p-values. P-values below this level are just printed as "<p.level". If it is NULL, p-value are rounded to three decimals. Default to NULL.
+#' @param ci.type, the type of the confidence interval, either 'pl' for profile-likelihood or 'wald' for wald-based confidence intervals. Default is 'pl'
 #' @param ... further arguments to \code{confint}
 #'
 #' @return matrix with odds-ratios (exponential of coefficients), confidence intervals, and p values
 #'
 #' @export
 #'
-ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
+ExtractOR <- function(object, level=0.95, p.level=NULL, ci.type=c("pl", "wald"), ...) {
+
+    ## get parameter
+    ci.type <- match.arg(ci.type)
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
@@ -59,8 +68,30 @@ ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
     or <- round(exp(coef(object)),3)
 
     ## get CI intervals
-    ci <- round(exp(confint(object, level=level, ...)),3)
+
+    # 1) based on profile-likelihood
+    if (ci.type=="pl") {
+
+        ci <- try(confint(object, level=level, ...), silent=T)
+        if (inherits(ci, "try-error")) {
+            warning("Profile-likelihood based confidence intervals cannot be computed, switching to wald based intervals.")
+            ci.type <- "wald"
+        } else {
+            ci <- round(exp(ci),3)
+        }
+
+    }
+
+    # 2) wald based
+    if (ci.type=="wald") {
+
+        nq <- qnorm((0.5 + 0.5 * level))
+        ci <- cbind(coefs[,1] - coefs[,2] * nq,
+                    coefs[,1] + coefs[,2] * nq)
+        ci <- round(exp(ci), 3)
+    }
     
+
     ## assemble data frame
     ret <- cbind(or,
                  ci,
