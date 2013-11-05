@@ -44,13 +44,18 @@ ReplaceCoefNames <- function(object) {
 #' @param object a 'glm' object
 #' @param level the confidence level (has to be between 0 and 1). Default to 0.95
 #' @param p.level a number between 0 and 1 that will be used as lower bound to display p-values. P-values below this level are just printed as "<p.level". If it is NULL, p-value are rounded to three decimals. Default to NULL.
+#' @param ci.type the type of the confidence intervals. Use 'pl' for profile-likelihood based confidence intervals and 'wald' for Wald based intervals. Default is 'pl'. If profile-likelihood based cannot be computed, wald based intervals will be used as fallback.
 #' @param ... further arguments to \code{confint}
 #'
 #' @return matrix with odds-ratios (exponential of coefficients), confidence intervals, and p values
 #'
 #' @export
 #'
-ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
+ExtractOR <- function(object, level=0.95, p.level=NULL, ci.type=c("pl", "wald"), ...) {
+
+
+    ## match arguments
+    ci.type <- match.arg(ci.type)
 
     ## get the summary and therewith the p.values
     coefs <- summary(object)$coefficients
@@ -59,10 +64,21 @@ ExtractOR <- function(object, level=0.95, p.level=NULL, ...) {
     or <- round(exp(coef(object)),3)
 
     ## get CI intervals
-    ## for each indivdual parameter
-    ci <- try(round(exp(confint(object, level=level, ...)),3))
-    if (inherits(ci, "try-error")) {
-        ci <- matrix(NA, nrow=length(or), ncol=2)
+    if (ci.type == "pl") {
+        ## using function from MASS package to calculate profile-likelihood based CI
+        ci <- try(round(exp(MASS:::confint.glm(object, level=level, ...)),3))
+        if (inherits(ci, "try-error")) {
+            warning("Profile-likelihood based confidence intervals cannot be computed, switching to wald based.")
+            ci.type <- "wald"
+        }
+    }
+
+    if (ci.type == "wald") {
+        ## wald based intervals 
+        #nq <- 0.5 + 0.5 * level
+        #ci <- cbind(coefs[,1] - qnorm(nq) * coefs[,2],
+        #            coefs[,2] + qnorm(nq) * coefs[,2])
+        ci <- confint.default(object, level=level, ... )
     }
     
     ## assemble data frame
