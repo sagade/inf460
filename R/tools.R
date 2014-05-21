@@ -563,6 +563,8 @@ CoxP <- function(x) {
 #' @param sanitize function to sanitize row- and colnames. Default is the identical function where nothing will be replaced.
 #' @param ... further arguments to Hmisc::latex
 #'
+#'
+#' @return returns (invisible) a list of class \code{latex}, see Hmisc \code{latex} for details
 #' @import Hmisc
 #' @export
 #'
@@ -620,7 +622,10 @@ PrintLatex <- function(x, file="", booktabs=T, ctable=F, caption=NULL, caption.l
         }
     }
 
-    Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, caption=caption, caption.loc=caption.loc, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, cellTexCmds=cellTexCmds, ...)
+    ret <- Hmisc::latex(x, file=file, booktabs=booktabs, ctable=ctable, caption=caption, caption.loc=caption.loc, rowlabel=rowlabel, n.cgroup=n.cgroup, cgroup=cgroup, n.rgroup=n.rgroup, rgroup=rgroup, cellTexCmds=cellTexCmds, ...)
+
+    invisible(ret)
+
 }
 
 

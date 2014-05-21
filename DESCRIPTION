@@ -14,6 +14,3 @@ Depends:
     texreg
 Description: Misc stuff
 License: GPL-3
-Collate:
-    'graphics.R'
-    'tools.R'
